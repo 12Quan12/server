@@ -15,6 +15,16 @@ const createNew = async (req, res, next) => {
     }
 }
 
+const update = async (req, res, next) => {
+    try {
+        const boardId = req.params
+        const updatedBoard = await boardService.update(boardId, req.body)
+        res.status(StatusCodes.CREATED).json(updatedBoard)
+    } catch (error) {
+        next(error)
+    }
+}
+
 
 const getDetails = async (req, res, next) => {
     try {
@@ -28,5 +38,6 @@ const getDetails = async (req, res, next) => {
 
 export const boardController = {
     createNew,
+    update,
     getDetails
 }

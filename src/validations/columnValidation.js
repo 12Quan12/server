@@ -23,6 +23,24 @@ const createNew = async (req, res, next) => {
         next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
     }
 }
+
+const update = async (req, res, next) => {
+    // tạo điều kiện để valid body
+    const correctCondition = Joi.object({
+        boardId: Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE),
+        title: Joi.string().min(3).max(50).trim().strict()
+    })
+    try {
+        await correctCondition.validateAsync(req.body, {
+            abortEarly: false, // trả về nhiều lỗi nếu có
+            allowUnknown: true // cho phép các field ngoài field đã định nghĩa
+        })
+        next()
+    } catch (error) {
+        next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
+    }
+}
 export const columnValidation = {
-    createNew
+    createNew,
+    update
 }
