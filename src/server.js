@@ -25,10 +25,19 @@ const START_SERVER = () => {
 
   // middleware xử lý lỗi tập trung
   app.use(errorHandlingMiddleware)
-  app.listen(env.APP_PORT, env.APP_HOST, async () => {
-    // eslint-disable-next-line no-console
-    console.log(`Hello ${env.AUTHOR}, I am running at ${env.APP_HOST}:${env.APP_PORT}`)
-  })
+
+  if (env.BUILD_MODE == "production") {
+    app.listen(process.env.PORT, async () => {
+      // eslint-disable-next-line no-console
+      console.log(`Production : Hello ${env.AUTHOR}, I am running at port:${process.env.PORT}`)
+    })
+  } else {
+    app.listen(env.LOCAL_DEV_APP_PORT, env.LOCAL_DEV_APP_HOST, async () => {
+      // eslint-disable-next-line no-console
+      console.log(`Dev : Hello ${env.AUTHOR}, I am running at ${env.LOCAL_DEV_APP_HOST}:${env.LOCAL_DEV_APP_PORT}`)
+    })
+  }
+
   // lắng nghe crash app để đóng kết nối DB
   exitHook((signal) => {
     console.log(`exit app`)

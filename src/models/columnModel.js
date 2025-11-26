@@ -73,6 +73,9 @@ const update = async (columnId, updateData) => {
                 delete updateData[fieldName]
             }
         })
+        if (updateData?.cardOrderIds) {
+            updateData.cardOrderIds = updateData.cardOrderIds(_id => new ObjectId(_id))
+        }
         return await GET_DB().collection(COLUMN_COLLECTION_NAME).findOneAndUpdate(
             { _id: new ObjectId(columnId) },
             {
@@ -87,11 +90,18 @@ const update = async (columnId, updateData) => {
     } catch (error) { throw new Error(error) }
 }
 
+const deleteOneByIt = async (columnId) => {
+    return await GET_DB().collection(COLUMN_COLLECTION_NAME).deleteOne({
+        _id: new ObjectId(columnId)
+    })
+}
+
 export const columnModel = {
     COLUMN_COLLECTION_NAME,
     COLUMN_COLLECTION_SCHEMA,
     createNew,
     findOneById,
     pushCardOrderIds,
-    update
+    update,
+    deleteOneByIt
 }
