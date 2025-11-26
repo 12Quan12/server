@@ -5,21 +5,30 @@
  */
 
 import express from 'express'
+import cors from "cors"
+import { corsOptions } from "~/config/cors"
 import exitHook from 'async-exit-hook'
 import { CONNECT_DB, GET_DB, CLOSE_DB } from "~/config/mongodb"
 import { env } from "~/config/environment"
-const app = express()
+import { APIs_V1 } from "~/routes/v1"
+import { errorHandlingMiddleware } from '~/middlewares/errorHandlingMiddleware'
 
 const START_SERVER = () => {
-  app.get('/', (req, res) => {
-    res.end('<h1>Hello World!</h1><hr>')
-  })
+  const app = express()
+
+  app.use(cors(corsOptions))
+  // enable req.body data
+  app.use(express.json())
+
+  // use APIs v1
+  app.use('/v1', APIs_V1)
+
+  // middleware xử lý lỗi tập trung
+  app.use(errorHandlingMiddleware)
   app.listen(env.APP_PORT, env.APP_HOST, async () => {
-    // console.log(await GET_DB().listCollections().toArray())
     // eslint-disable-next-line no-console
     console.log(`Hello ${env.AUTHOR}, I am running at ${env.APP_HOST}:${env.APP_PORT}`)
   })
-
   // lắng nghe crash app để đóng kết nối DB
   exitHook((signal) => {
     console.log(`exit app`)
