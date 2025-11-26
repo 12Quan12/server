@@ -15,5 +15,9 @@ export const env = {
 
     BUILD_MODE: process.env.BUILD_MODE,
 
-    AUTHOR: process.env.AUTHOR
+    AUTHOR: process.env.AUTHOR,
+
+    ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET,
+    ACCESS_TOKEN_TTL: process.env.ACCESS_TOKEN_TTL,
+    REFRESH_TOKEN_TTL: 14 * 24 * 60 * 60 * 1000 || process.env.REFRESH_TOKEN_TTL
 }
