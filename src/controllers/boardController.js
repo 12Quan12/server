@@ -4,7 +4,6 @@
  * "A bit of fragrance clings to the hand that gives flowers!"
  */
 import { StatusCodes } from "http-status-codes";
-import ApiError from "~/utils/ApiError";
 import { boardService } from "~/services/boardService";
 
 const createNew = async (req, res, next) => {
