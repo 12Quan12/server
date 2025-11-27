@@ -6,3 +6,7 @@
 
 export const OBJECT_ID_RULE = /^[0-9a-fA-F]{24}$/
 export const OBJECT_ID_RULE_MESSAGE = 'Your string fails to match the Object Id pattern!'
+export const EMAIL_RULE = /^\S+@\S+\.\S+$/
+export const EMAIL_RULE_MESSAGE = "Email invalid"
+export const PASSWORD_RULE = /^(?=.*[a-zA-z])(?=.*\d)[A-Za-z\d\W]{8,256}$/
+export const PASSWORD_RULE_MESSAGE = "Password invalid"

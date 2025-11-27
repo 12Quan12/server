@@ -17,7 +17,11 @@ export const env = {
 
     AUTHOR: process.env.AUTHOR,
 
-    ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET,
-    ACCESS_TOKEN_TTL: process.env.ACCESS_TOKEN_TTL,
-    REFRESH_TOKEN_TTL: 14 * 24 * 60 * 60 * 1000 || process.env.REFRESH_TOKEN_TTL
+    //zalo config
+    IMEI: process.env.IMEI,
+    COOKIE_ZALO: process.env.COOKIE_ZALO,
+    SECRET_KEY: process.env.SECRET_KEY,
+
+    WEBSITE_DOMAIN_DEVELOPMENT: process.env.WEBSITE_DOMAIN_DEVELOPMENT,
+    WEBSITE_DOMAIN_PRODUCTION: process.env.WEBSITE_DOMAIN_PRODUCTION
 }
