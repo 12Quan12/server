@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from "uuid"
 import { pickUser } from "~/utils/formaters"
 import { zaloProvider } from "~/providers/zaloProvider"
 import { WEBSITE_DOMAIN } from "~/utils/constants"
+import { jwtProvider } from "~/providers/jwtProvider"
+import { env } from "~/config/environment"
 
 const createNew = async (reqBody) => {
     try {
@@ -59,12 +61,28 @@ const login = async (reqBody) => {
         const exitsUser = await userModel.findOneByEmail(reqBody.email)
         if (!exitsUser) throw new ApiError(StatusCodes.NOT_FOUND, "Email dose not exits!!!")
         if (!exitsUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, "Your account is not active!!!")
-        if (!bcrypt.compare(reqBody.password, exitsUser.password)) {
+        if (!bcrypt.compareSync(reqBody.password, exitsUser.password)) {
             throw new ApiError(StatusCodes.NOT_ACCEPTABLE, "Your Email or Password iscorrect!!!")
         }
         const userInfo = {
             _id: exitsUser._id,
             email: exitsUser.email
+        }
+        // tạo ra accessToken và refreshToken để trả về cho client
+        const accessToken = await jwtProvider.generateToken(
+            userInfo,
+            env.ACCESS_TOKEN_SECRET_SIGNATURE,
+            env.ACCESS_TOKEN_TTL
+        )
+        const refreshToken = await jwtProvider.generateToken(
+            userInfo,
+            env.REFRESH_TOKEN_SECRET_SIGNATURE,
+            env.REFRESH_TOKEN_TTL
+        )
+        return {
+            accessToken,
+            refreshToken,
+            ...pickUser(exitsUser)
         }
     } catch (error) { throw error }
 }

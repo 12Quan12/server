@@ -1,4 +1,5 @@
 import { StatusCodes } from "http-status-codes"
+import ms from "ms"
 import { userService } from "~/services/userService"
 
 const createNew = async (req, res, next) => {
@@ -20,6 +21,14 @@ const verifyAccount = async (req, res, next) => {
 const login = async (req, res, next) => {
     try {
         const result = await userService.login(req.body)
+        const options = {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+            maxAge: ms('14 days')
+        }
+        res.cookie('accessToken', result.accessToken, options)
+        res.cookie('refreshToken', result.refreshToken, options)
         res.status(StatusCodes.OK).json(result)
     } catch (error) { next(error) }
 }
