@@ -11,6 +11,7 @@ import { BOARD_TYPES } from '~/utils/constants'
 import { columnModel } from './columnModel'
 import { cardModel } from './cardModel'
 import { pagingSkipValue } from '~/utils/algorithms'
+import { userModel } from './userModel'
 // Define Collection (name & schema)
 const BOARD_COLLECTION_NAME = 'boards'
 const BOARD_COLLECTION_SCHEMA = Joi.object({
@@ -44,10 +45,16 @@ const validateBeforeCreate = async (data) => {
     return await BOARD_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
 }
 
-const createNew = async (data) => {
+const createNew = async (userId, data) => {
     try {
         const validData = await validateBeforeCreate(data)
-        return await GET_DB().collection(BOARD_COLLECTION_NAME).insertOne(validData)
+        const newBoardToAdd = {
+            ...validData,
+            ownerIds: [
+                new ObjectId(userId)
+            ]
+        }
+        return await GET_DB().collection(BOARD_COLLECTION_NAME).insertOne(newBoardToAdd)
     } catch (error) { throw new Error(error) }
 }
 
@@ -59,19 +66,26 @@ const findOneById = async (id) => {
     } catch (error) { throw new Error(err) }
 }
 
-const getDetails = async (id) => {
+const getDetails = async (userId, boardId) => {
     try {
-        // return await GET_DB().collection(BOARD_COLLECTION_NAME).findOne({
-        //     _id: new ObjectId(id)
-        // })
+        const queryConditions = [
+            {
+                _id: new ObjectId(boardId),
+            },
+            {
+                _destroy: false
+            },
+            {
+                $or: [
+                    { ownerIds: { $all: [new ObjectId(userId)] } },
+                    { memberIds: { $all: [new ObjectId(userId)] } }
+                ]
+            }
+
+        ]
 
         const result = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate([
-            {
-                $match: {
-                    _id: new ObjectId(id),
-                    _destroy: false
-                }
-            },
+            { $match: { $and: queryConditions } },
             {
                 $lookup: {
                     from: columnModel.COLUMN_COLLECTION_NAME,
@@ -86,6 +100,24 @@ const getDetails = async (id) => {
                     localField: '_id',
                     foreignField: 'boardId',
                     as: 'cards'
+                }
+            },
+            {
+                $lookup: {
+                    from: userModel.USER_COLLECTION_NAME,
+                    localField: 'ownerIds',
+                    foreignField: '_id',
+                    as: 'owners',
+                    pipeline: [{ $project: { 'password': 0, 'verifyToken': 0 } }]
+                }
+            },
+            {
+                $lookup: {
+                    from: userModel.USER_COLLECTION_NAME,
+                    localField: 'memberIds',
+                    foreignField: '_id',
+                    as: 'members',
+                    pipeline: [{ $project: { 'password': 0, 'verifyToken': 0 } }]
                 }
             }
         ]).toArray()

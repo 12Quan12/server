@@ -24,6 +24,23 @@ const createNew = async (req, res, next) => {
         next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
     }
 }
+
+const update = async (req, res, next) => {
+    // tạo điều kiện để valid body
+    const correctCondition = Joi.object({
+        title: Joi.string().min(3).max(50).trim().strict(),
+        description: Joi.string().optional()
+    })
+    try {
+        await correctCondition.validateAsync(req.body, {
+            abortEarly: false // trả về nhiều lỗi nếu có
+        })
+        next()
+    } catch (error) {
+        next(new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, new Error(error).message))
+    }
+}
 export const cardValidation = {
-    createNew
+    createNew,
+    update
 }
