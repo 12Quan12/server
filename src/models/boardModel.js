@@ -10,6 +10,7 @@ import { GET_DB } from '~/config/mongodb'
 import { BOARD_TYPES } from '~/utils/constants'
 import { columnModel } from './columnModel'
 import { cardModel } from './cardModel'
+import { pagingSkipValue } from '~/utils/algorithms'
 // Define Collection (name & schema)
 const BOARD_COLLECTION_NAME = 'boards'
 const BOARD_COLLECTION_SCHEMA = Joi.object({
@@ -19,6 +20,16 @@ const BOARD_COLLECTION_SCHEMA = Joi.object({
     type: Joi.string().valid(BOARD_TYPES.PUBLIC, BOARD_TYPES.PRIVATE).required(),
     // Lưu ý các item trong mảng columnOrderIds là ObjectId nên cần thêm pattern cho chuẩn nhé, (lúc quay video số 57 mình quên nhưng sang đầu video số 58 sẽ có nhắc lại về cái này.)
     columnOrderIds: Joi.array().items(
+        Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
+    ).default([]),
+
+    // nhung admin cua board
+    ownerIds: Joi.array().items(
+        Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
+    ).default([]),
+
+    // nhung member cua board
+    memberIds: Joi.array().items(
         Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
     ).default([]),
 
@@ -145,6 +156,56 @@ const update = async (boardId, updateData) => {
     } catch (error) { throw new Error(error) }
 }
 
+const getBoards = async (userId, page, itemsPerPage) => {
+    try {
+        const queryConditions = [
+            // dieu kien 1 : board chua bi xoa
+            {
+                _destroy: false
+            },
+            // dieu kien 2 : user thuộc ownerIds hoặc member của board
+            {
+                $or: [
+                    { ownerIds: { $all: [new ObjectId(userId)] } },
+                    { memberIds: { $all: [new ObjectId(userId)] } }
+                ]
+            }
+
+        ]
+        const query = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate(
+            [
+                { $match: { $and: queryConditions } },
+                { $sort: { title: 1 } },
+                // facet để xử lý nhiều luồng trong 1 query
+                {
+                    $facet: {
+                        // Luồng 1: query boards
+                        'queryBoards': [
+                            {
+                                $skip: pagingSkipValue(page, itemsPerPage), // bỏ qua số lượng bản ghi của những page trước đó 
+                            },
+                            {
+                                $limit: itemsPerPage // giới hạn tối đa số lượng bản ghi trả về trên 1 page
+                            }
+                        ],
+                        // luồng 2: query đếm tổng số lượng bản ghi board trong db và trả về vào biến countedAllBoards
+                        'queryTotalBoards': [{ $count: 'countedAllBoards' }]
+                    }
+                }
+            ],
+            {
+                // fix B và a trong ascii vì B đứng trước a
+                collation: { locale: 'en' }
+            }
+        ).toArray()
+        const res = query[0]
+        return {
+            boards: res.queryBoards || [],
+            totalBoards: res.queryTotalBoards[0]?.countedAllBoards || 0
+        }
+    } catch (error) { throw new Error(error) }
+}
+
 export const boardModel = {
     BOARD_COLLECTION_NAME,
     BOARD_COLLECTION_SCHEMA,
@@ -153,5 +214,6 @@ export const boardModel = {
     getDetails,
     pushColumnOrderIds,
     update,
-    pullColumnOrderIds
+    pullColumnOrderIds,
+    getBoards
 }
