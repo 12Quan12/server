@@ -1,7 +1,7 @@
 import { StatusCodes } from "http-status-codes"
 import { userModel } from "~/models/userModel"
 import ApiError from "~/utils/ApiError"
-import bcrypt from "bcrypt"
+import bcrypt, { compare, compareSync } from "bcrypt"
 import { v4 as uuidv4 } from "uuid"
 import { pickUser } from "~/utils/formaters"
 import { zaloProvider } from "~/providers/zaloProvider"
@@ -37,6 +37,31 @@ const createNew = async (reqBody) => {
         return pickUser(getNewUser)
     } catch (error) { throw error }
 }
+
+const update = async (userId, reqBody) => {
+    try {
+        const exitsUser = await userModel.findOneById(userId)
+        if (!exitsUser) throw new ApiError(StatusCodes.NOT_FOUND, "Account dose not exits!!!")
+        if (!exitsUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, "Your account is not active!!!")
+        let updatedUser = {}
+        // trường hợp change password
+        if (reqBody.currentPassword && reqBody.newPassword) {
+            if (!bcrypt.compareSync(reqBody.currentPassword, exitsUser.password)) {
+                throw new ApiError(StatusCodes.NOT_ACCEPTABLE, "Password iscorrect!!!")
+            }
+            updatedUser = await userModel.update(exitsUser._id, {
+                password: bcrypt.hashSync(reqBody.newPassword, 8)
+            })
+
+        } else {
+            updatedUser = await userModel.update(exitsUser._id, {
+                displayName: reqBody.displayName
+            })
+        }
+        return pickUser(updatedUser)
+    } catch (error) { throw error }
+}
+
 
 const verifyAccount = async (reqBody) => {
     try {
@@ -87,8 +112,31 @@ const login = async (reqBody) => {
     } catch (error) { throw error }
 }
 
+const refreshToken = async (clientRefreshToken) => {
+    try {
+        const refreshTokenDecoded = await jwtProvider.verifyToken(
+            clientRefreshToken,
+            env.REFRESH_TOKEN_SECRET_SIGNATURE
+        )
+        const userInfo = {
+            _id: refreshTokenDecoded._id,
+            email: refreshTokenDecoded.email
+        }
+        const accessToken = await jwtProvider.generateToken(
+            userInfo,
+            env.ACCESS_TOKEN_SECRET_SIGNATURE,
+            env.ACCESS_TOKEN_TTL
+        )
+        return {
+            accessToken
+        }
+    } catch (error) { throw error }
+}
+
 export const userService = {
     createNew,
     verifyAccount,
-    login
+    login,
+    refreshToken,
+    update
 }
