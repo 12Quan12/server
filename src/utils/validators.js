@@ -10,3 +10,6 @@ export const EMAIL_RULE = /^\S+@\S+\.\S+$/
 export const EMAIL_RULE_MESSAGE = "Email invalid"
 export const PASSWORD_RULE = /^(?=.*[a-zA-z])(?=.*\d)[A-Za-z\d\W]{8,256}$/
 export const PASSWORD_RULE_MESSAGE = "Password invalid"
+
+export const LIMIT_COMMON_FILE_SIZE = 10485760
+export const ALLOW_COMMON_FILE_TYPES = ['image/jpg', 'image/jpeg', 'image/png']

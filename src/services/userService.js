@@ -8,6 +8,7 @@ import { zaloProvider } from "~/providers/zaloProvider"
 import { WEBSITE_DOMAIN } from "~/utils/constants"
 import { jwtProvider } from "~/providers/jwtProvider"
 import { env } from "~/config/environment"
+import { cloudinaryProvider } from "~/providers/cloudinaryProvider"
 
 const createNew = async (reqBody) => {
     try {
@@ -38,7 +39,7 @@ const createNew = async (reqBody) => {
     } catch (error) { throw error }
 }
 
-const update = async (userId, reqBody) => {
+const update = async (userId, reqBody, userAvatarFile) => {
     try {
         const exitsUser = await userModel.findOneById(userId)
         if (!exitsUser) throw new ApiError(StatusCodes.NOT_FOUND, "Account dose not exits!!!")
@@ -53,6 +54,14 @@ const update = async (userId, reqBody) => {
                 password: bcrypt.hashSync(reqBody.newPassword, 8)
             })
 
+        } else if (userAvatarFile) {
+            // trường hợp uploadfile lên cloud storage, (cloudinary)
+            const uploadResult = await cloudinaryProvider.streamUpload(userAvatarFile.buffer, "users")
+            console.log("🚀 ~ update ~ uploadResult:", uploadResult)
+            // lưu lại url của file vừa upload vào database
+            updatedUser = await userModel.update(exitsUser._id, {
+                avatar: uploadResult.secure_url
+            })
         } else {
             updatedUser = await userModel.update(exitsUser._id, {
                 displayName: reqBody.displayName
